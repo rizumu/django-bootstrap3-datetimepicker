@@ -41,3 +41,7 @@ __pycache__/
 .idea/
 *.iml
 *.iws
+
+# Vim
+*~
+.*.sw[op]
