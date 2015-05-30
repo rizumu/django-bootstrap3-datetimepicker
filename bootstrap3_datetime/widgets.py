@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime
 from django.forms.utils import flatatt
 from django.forms.widgets import DateTimeInput
 from django.utils import translation
@@ -46,6 +47,7 @@ class DateTimePicker(DateTimeInput):
                         lang = lang_map.get(lang, 'en-us')
                     if lang not in ('en', 'en-us'):
                         yield 'bootstrap3_datetime/js/locales/bootstrap-datetimepicker.%s.js' % (lang)
+                    yield 'bootstrap3_datetime/js/django-bootstrap3-datetimepicker-binding.js'
 
         js = JsFiles()
         css = {'all': ('bootstrap3_datetime/css/bootstrap-datetimepicker.min.css',), }
@@ -87,20 +89,6 @@ class DateTimePicker(DateTimeInput):
             </span>
         </div>'''
 
-    js_template = '''
-        <script>
-            (function(window) {
-                var callback = function() {
-                    $(function(){$("#%(picker_id)s:has(input:not([readonly],[disabled]))").datetimepicker(%(options)s);});
-                };
-                if(window.addEventListener)
-                    window.addEventListener("load", callback, false);
-                else if (window.attachEvent)
-                    window.attachEvent("onload", callback);
-                else window.onload = callback;
-            })(window);
-        </script>'''
-
     def __init__(self, attrs=None, format=None, options=None, div_attrs=None, icon_attrs=None):
         if not icon_attrs:
             icon_attrs = {'class': 'glyphicon glyphicon-calendar'}
@@ -114,12 +102,9 @@ class DateTimePicker(DateTimeInput):
         self.div_attrs = div_attrs and div_attrs.copy() or {}
         self.icon_attrs = icon_attrs and icon_attrs.copy() or {}
         self.picker_id = self.div_attrs.get('id') or None
-        if options == False:  # datetimepicker will not be initalized only when options is False
-            self.options = False
-        else:
-            self.options = options and options.copy() or {}
-            if format and not self.options.get('format') and not self.attrs.get('date-format'):
-                self.options['format'] = self.conv_datetime_format_py2js(format)
+        self.options = options and options.copy() or {}
+        if format and not self.options.get('format') and not self.attrs.get('date-format'):
+            self.options['format'] = self.conv_datetime_format_py2js(format)
 
     def render(self, name, value, attrs=None):
         if value is None:
@@ -130,9 +115,14 @@ class DateTimePicker(DateTimeInput):
             input_attrs['value'] = force_text(self._format_value(value))
         input_attrs = dict([(key, conditional_escape(val)) for key, val in input_attrs.items()])  # python2.6 compatible
         if not self.picker_id:
-             self.picker_id = (input_attrs.get('id', '') +
-                               '_pickers').replace(' ', '_')
+            self.picker_id = input_attrs.get('id', '') + '_picker'
         self.div_attrs['id'] = self.picker_id
+
+        data_attrs = '{}'
+        if self.options:
+            data_attrs = json.dumps(self.options)
+
+        self.div_attrs['data-django-bootstrap3-datetimepicker'] = data_attrs
         picker_id = conditional_escape(self.picker_id)
         div_attrs = dict(
             [(key, conditional_escape(val)) for key, val in self.div_attrs.items()])  # python2.6 compatible
@@ -140,10 +130,13 @@ class DateTimePicker(DateTimeInput):
         html = self.html_template % dict(div_attrs=flatatt(div_attrs),
                                          input_attrs=flatatt(input_attrs),
                                          icon_attrs=flatatt(icon_attrs))
-        if self.options:
-            self.options['language'] = translation.get_language()
-            js = self.js_template % dict(picker_id=picker_id,
-                                         options=json.dumps(self.options or {}))
-        else:
-            js = ''
-        return mark_safe(force_text(html + js))
+        return mark_safe(html)
+
+    def value_from_datadict(self, data, files, name):
+        formatted_value = data.get(name, None)
+        if isinstance(formatted_value, datetime):
+            return formatted_value
+
+        if formatted_value is None:
+            return None
+        return datetime.strptime(formatted_value, self.format)
