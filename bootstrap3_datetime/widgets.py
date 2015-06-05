@@ -131,12 +131,3 @@ class DateTimePicker(DateTimeInput):
                                          input_attrs=flatatt(input_attrs),
                                          icon_attrs=flatatt(icon_attrs))
         return mark_safe(html)
-
-    def value_from_datadict(self, data, files, name):
-        formatted_value = data.get(name, None)
-        if isinstance(formatted_value, datetime):
-            return formatted_value
-
-        if formatted_value is None:
-            return None
-        return datetime.strptime(formatted_value, self.format)
