@@ -15,13 +15,12 @@ try:
 except ImportError:  # python3
     from django.utils.encoding import force_text
 
-
-class DateTimePicker(DateTimeInput):
+class BaseDateTimePicker(DateTimeInput):
     class Media:
         class JsFiles(object):
             def __iter__(self):
-                yield 'bootstrap3_datetime/js/moment.min.js'
-                yield 'bootstrap3_datetime/js/bootstrap-datetimepicker.min.js'
+                yield 'js/moment.min.js'
+                yield 'js/bootstrap-datetimepicker.min.js'
                 lang = translation.get_language()
                 if lang:
                     lang = lang.lower()
@@ -46,11 +45,10 @@ class DateTimePicker(DateTimeInput):
                     if len(lang) > 2:
                         lang = lang_map.get(lang, 'en-us')
                     if lang not in ('en', 'en-us'):
-                        yield 'bootstrap3_datetime/js/locales/bootstrap-datetimepicker.%s.js' % (lang)
-                    yield 'bootstrap3_datetime/js/django-bootstrap3-datetimepicker-binding.js'
+                        yield 'js/locales/bootstrap-datetimepicker.%s.js' % (lang)
 
         js = JsFiles()
-        css = {'all': ('bootstrap3_datetime/css/bootstrap-datetimepicker.min.css',), }
+        css = {'all': ('css/bootstrap-datetimepicker.min.css',), }
 
     # http://momentjs.com/docs/#/parsing/string-format/
     # http://docs.python.org/2/library/datetime.html#strftime-strptime-behavior
@@ -96,7 +94,7 @@ class DateTimePicker(DateTimeInput):
             div_attrs = {'class': 'input-group date'}
         if format is None and options and options.get('format'):
             format = self.conv_datetime_format_js2py(options.get('format'))
-        super(DateTimePicker, self).__init__(attrs, format)
+        super(BaseDateTimePicker, self).__init__(attrs, format)
         if 'class' not in self.attrs:
             self.attrs['class'] = 'form-control'
         self.div_attrs = div_attrs and div_attrs.copy() or {}
@@ -131,3 +129,14 @@ class DateTimePicker(DateTimeInput):
                                          input_attrs=flatatt(input_attrs),
                                          icon_attrs=flatatt(icon_attrs))
         return mark_safe(html)
+
+
+class DateTimePicker(BaseDateTimePicker):
+    class Media:
+        class JsFiles(object):
+            def __iter__(self):
+                for jsfile in BaseDateTimePicker.Media.JsFiles():
+                    yield  jsfile
+                yield 'bootstrap3_datetime/js/django-bootstrap3-datetimepicker-binding.js'
+        css = BaseDateTimePicker.Media.css
+        js = JsFiles()
