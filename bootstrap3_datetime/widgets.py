@@ -19,12 +19,10 @@ class BaseDateTimePicker(DateTimeInput):
     class Media:
         class JsFiles(object):
             def __iter__(self):
-                yield 'js/moment-with-locales.min.js'
-                yield 'js/bootstrap-datetimepicker.min.js'
                 lang = translation.get_language()
                 if lang:
                     lang = lang.lower()
-                    #There is language name that length>2 *or* contains uppercase.
+                    # There is language name that length>2 *or* contains uppercase.
                     lang_map = {
                         'ar-ma': 'ar-ma',
                         'en-au': 'en-au',
@@ -50,7 +48,6 @@ class BaseDateTimePicker(DateTimeInput):
 
 
         js = JsFiles()
-        css = {'all': ('css/bootstrap-datetimepicker.min.css',), }
 
     # http://momentjs.com/docs/#/parsing/string-format/
     # http://docs.python.org/2/library/datetime.html#strftime-strptime-behavior
@@ -145,5 +142,4 @@ class DateTimePicker(BaseDateTimePicker):
                 for jsfile in BaseDateTimePicker.Media.JsFiles():
                     yield jsfile
                 yield 'bootstrap3_datetime/js/django-bootstrap3-datetimepicker-binding.js'
-        css = BaseDateTimePicker.Media.css
         js = JsFiles()
